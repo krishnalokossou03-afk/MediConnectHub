@@ -88,23 +88,25 @@ class DoctorController extends Controller
             })->count();
             $upcomingAppointments = \App\Models\Appointment::with(['patient.user'])
                 ->where('doctor_id', $doctor->id)
-                ->where('date', '>=', now()->toDateString())
-                ->orderBy('date')
-                ->orderBy('heure')
+                ->where('appointment_date', '>=', now()->toDateString())
+                ->orderBy('appointment_date')
                 ->get();
             $newAppointments = \App\Models\Appointment::with(['patient.user'])
                 ->where('doctor_id', $doctor->id)
-                ->where('statut', 'en attente')
-                ->orderBy('date')
-                ->orderBy('heure')
+                ->where('status', 'pending')
+                ->orderBy('appointment_date')
                 ->get();
             $recentConsultations = \App\Models\Consultation::with(['patient.user'])
                 ->where('doctor_id', $doctor->id)
-                ->orderByDesc('date_consultation')
+                ->orderByDesc('created_at')
                 ->take(5)
                 ->get();
             $patients = \App\Models\Patient::whereIn('id',
-                \App\Models\Consultation::where('doctor_id', $doctor->id)->pluck('patient_id')->unique()
+                \App\Models\Consultation::where('doctor_id', $doctor->id)
+                    ->with('appointment')
+                    ->get()
+                    ->pluck('appointment.patient_id')
+                    ->unique()
             )->with('user')->get();
             $pendingPrescriptions = \App\Models\Prescription::whereHas('consultation', function($q) use ($doctor) {
                 $q->where('doctor_id', $doctor->id);
@@ -116,14 +118,14 @@ class DoctorController extends Controller
     public function confirmAppointment($id)
     {
         $appointment = \App\Models\Appointment::findOrFail($id);
-        $appointment->statut = 'confirmé';
+        $appointment->status = 'confirmed';
         $appointment->save();
         return back()->with('success', 'Rendez-vous confirmé.');
     }
     public function refuseAppointment($id)
     {
         $appointment = \App\Models\Appointment::findOrFail($id);
-        $appointment->statut = 'refusé';
+        $appointment->status = 'refused';
         $appointment->save();
         return back()->with('success', 'Rendez-vous refusé.');
     }
@@ -148,7 +150,7 @@ class DoctorController extends Controller
                 ->get();
             $consultations = \App\Models\Consultation::with(['patient.user'])
                 ->where('doctor_id', $doctor->id)
-                ->orderByDesc('date_consultation')
+                ->orderByDesc('created_at')
                 ->get();
             $prescriptions = \App\Models\Prescription::whereHas('consultation', function($q) use ($doctor) {
                 $q->where('doctor_id', $doctor->id);

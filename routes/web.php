@@ -25,7 +25,13 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Dashboard Admin
-Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+Route::middleware(['auth:admin'])->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/appointments', [\App\Http\Controllers\Admin\DashboardController::class, 'appointments'])->name('admin.appointments');
+    Route::delete('/admin/appointments/{id}', [\App\Http\Controllers\Admin\DashboardController::class, 'destroyAppointment'])->name('admin.appointments.delete');
+    Route::get('/admin/appointments/{id}/edit', [\App\Http\Controllers\Admin\DashboardController::class, 'editAppointment'])->name('admin.appointments.edit');
+    Route::post('/admin/appointments/{id}/update', [\App\Http\Controllers\Admin\DashboardController::class, 'updateAppointment'])->name('admin.appointments.update');
+});
 
 // Dashboard général
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -37,6 +43,10 @@ Route::get('/pharmacist/dashboard', [App\Http\Controllers\PharmacistController::
 
 // Routes ressources pour chaque entité
 Route::middleware('auth')->group(function () {
+    // Prise de rendez-vous patient : choix spécialité
+    Route::get('/appointments/request', [App\Http\Controllers\AppointmentController::class, 'requestForm'])->name('appointments.request');
+    // Prise de rendez-vous : enregistrement
+    Route::post('/appointments/book', [App\Http\Controllers\AppointmentController::class, 'book'])->name('appointments.book');
     Route::resource('patients', PatientController::class);
     Route::resource('doctors', DoctorController::class);
     Route::resource('appointments', AppointmentController::class);
@@ -86,40 +96,29 @@ Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect()->route('login');
+    return redirect()->route('home');
 })->name('logout');
 Route::post('/admin/logout', [\App\Http\Controllers\Admin\AdminAuthController::class, 'logout'])->name('admin.logout');
 
 // Paiement FedaPay
 Route::post('/fedapay/pay', [FedaPayController::class, 'initiatePayment'])->name('fedapay.pay');
-Route::get('/fedapay/callback', function() {
-    // Ici, tu pourras traiter la notification de paiement (callback serveur à serveur)
-    return response()->json(['status' => 'callback reçu']);
-})->name('fedapay.callback');
-Route::get('/fedapay/return', function() {
-    // Ici, tu pourras afficher un message de succès ou d'échec à l'utilisateur
-    return view('fedapay.return');
-})->name('fedapay.return');
+Route::get('/fedapay/callback', [FedaPayController::class, 'callback'])->name('fedapay.callback');
+Route::get('/fedapay/return', [FedaPayController::class, 'return'])->name('fedapay.return');
 
 Route::get('/fedapay/form', function() {
     return view('fedapay_form');
 });
 
 // Réinitialisation du mot de passe
-Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
-Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
-Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
-Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
+// Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+// Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+// Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+// Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 
 // Exemple carte OSM/Leaflet
 Route::get('/map-example', function () {
     return view('map-example');
 })->name('map.example');
-
-// Prise de rendez-vous patient : choix spécialité
-Route::get('/appointments/request', [App\Http\Controllers\AppointmentController::class, 'requestForm'])->name('appointments.request');
-// Prise de rendez-vous : enregistrement
-Route::post('/appointments/book', [App\Http\Controllers\AppointmentController::class, 'book'])->name('appointments.book');
 
 // Actions sur les rendez-vous (médecin)
 Route::post('/doctor/appointments/{appointment}/confirm', [App\Http\Controllers\DoctorController::class, 'confirmAppointment'])->name('doctor.appointments.confirm');
@@ -140,6 +139,9 @@ Route::middleware(['auth'])->group(function () {
         }
         return view('teleconsultation.room', compact('room'));
     })->name('teleconsultation.room');
+    Route::get('/teleconsultation/appointment/{appointment}', [App\Http\Controllers\AppointmentController::class, 'teleconsultationRoom'])->name('teleconsultation.appointment');
+    Route::get('/teleconsultation/chat/{appointment}', [App\Http\Controllers\AppointmentController::class, 'getTeleconsultationChat']);
+    Route::post('/teleconsultation/chat/{appointment}', [App\Http\Controllers\AppointmentController::class, 'postTeleconsultationChat']);
 });
 
 // Route temporaire pour la démo de visioconférence patient/médecin
@@ -210,3 +212,7 @@ Route::get('/dev-fix-patient', function() {
     }
     return 'Utilisateur ou rôle patient non trouvé.';
 });
+
+Route::get('/admin/quick-login', [\App\Http\Controllers\Admin\AdminAuthController::class, 'quickLogin'])->name('admin.quicklogin');
+Route::get('/bills/{bill}/receipt', [FedaPayController::class, 'downloadReceipt'])->name('bills.receipt.pdf');
+Route::get('/prescriptions/{prescription}/pdf', [App\Http\Controllers\PrescriptionController::class, 'downloadPdf'])->name('prescriptions.pdf');

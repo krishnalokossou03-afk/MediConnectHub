@@ -74,22 +74,23 @@ class PatientController extends Controller
         if ($patient) {
             $upcomingAppointments = \App\Models\Appointment::with(['doctor.user'])
                 ->where('patient_id', $patient->id)
-                ->where('date', '>=', now()->toDateString())
-                ->orderBy('date')
-                ->orderBy('heure')
+                ->where('appointment_date', '>=', now()->toDateString())
+                ->orderBy('appointment_date')
                 ->get();
-            $recentPrescriptions = \App\Models\Prescription::whereHas('consultation', function($q) use ($patient) {
+            $recentPrescriptions = \App\Models\Prescription::whereHas('consultation.appointment', function($q) use ($patient) {
                 $q->where('patient_id', $patient->id);
             })->orderByDesc('id')->take(5)->get();
             $stats['appointments'] = \App\Models\Appointment::where('patient_id', $patient->id)->count();
-            $stats['consultations'] = \App\Models\Consultation::where('patient_id', $patient->id)->count();
-            $stats['prescriptions'] = \App\Models\Prescription::whereHas('consultation', function($q) use ($patient) {
+            $stats['consultations'] = \App\Models\Consultation::whereHas('appointment', function($q) use ($patient) {
+                $q->where('patient_id', $patient->id);
+            })->count();
+            $stats['prescriptions'] = \App\Models\Prescription::whereHas('consultation.appointment', function($q) use ($patient) {
                 $q->where('patient_id', $patient->id);
             })->count();
             // Notification prochain RDV
             $nextRdv = $upcomingAppointments->first();
             if ($nextRdv) {
-                $notifications[] = 'Prochain rendez-vous le ' . \Carbon\Carbon::parse($nextRdv->date)->format('d/m/Y') . ' à ' . $nextRdv->heure . ' avec Dr ' . $nextRdv->doctor->user->firstname . ' ' . $nextRdv->doctor->user->lastname;
+                $notifications[] = 'Prochain rendez-vous le ' . \Carbon\Carbon::parse($nextRdv->appointment_date)->format('d/m/Y') . ' à ' . $nextRdv->heure . ' avec Dr ' . $nextRdv->doctor->user->firstname . ' ' . $nextRdv->doctor->user->lastname;
             }
         }
         return view('patient.dashboard', compact('upcomingAppointments', 'recentPrescriptions', 'stats', 'notifications'));

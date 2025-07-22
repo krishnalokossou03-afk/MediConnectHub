@@ -11,10 +11,15 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Mot de passe</label>
-        <input type="password" name="password" class="form-control" required>
+        <div class="input-group">
+          <input type="password" name="password" class="form-control" id="password" required>
+          <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('password')">
+            <i class="bi bi-eye" id="toggleIcon"></i>
+          </button>
+        </div>
       </div>
       <div class="mb-2 text-end">
-        <a href="{{ route('password.request') }}">Mot de passe oublié ?</a>
+        <!-- Lien mot de passe oublié supprimé car la route n'existe plus -->
       </div>
       <button type="submit" class="btn btn-primary w-100">Se connecter</button>
     </form>
@@ -29,4 +34,21 @@
     </div>
   </div>
 </div>
+@endsection
+@section('scripts')
+<script>
+function togglePassword(id) {
+    var input = document.getElementById(id);
+    var icon = document.getElementById('toggleIcon');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = "password";
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+</script>
 @endsection

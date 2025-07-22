@@ -23,7 +23,6 @@ class ConsultationController extends Controller
     {
         $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
-            'date' => 'required|date',
             'summary' => 'nullable|string',
         ]);
 
@@ -46,7 +45,6 @@ class ConsultationController extends Controller
     {
         $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
-            'date' => 'required|date',
             'summary' => 'nullable|string',
         ]);
 

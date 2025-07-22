@@ -6,25 +6,29 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-primary text-white">Connexion Administrateur</div>
-                <div class="card-body">
-                    @if(session('error'))
-                        <div class="alert alert-danger">{{ session('error') }}</div>
-                    @endif
-                    <form method="POST" action="{{ route('admin.login.submit') }}">
-                        @csrf
-                        <div class="form-group mb-3">
-                            <label for="email">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required autofocus>
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="password">Mot de passe</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
-                    </form>
+                <div class="card-body text-center">
+                    <a href="{{ route('admin.quicklogin') }}" class="btn btn-primary btn-lg w-100">Connexion rapide Admin</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+function togglePassword(id) {
+    var input = document.getElementById(id);
+    var icon = document.getElementById('toggleIcon');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = "password";
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+</script>
 @endsection

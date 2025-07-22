@@ -119,22 +119,47 @@ class DatabaseSeeder extends Seeder
         }
 
         // Création de l'utilisateur administrateur unique
-        $adminEmail = 'mediconnect.bj@gmail.com';
+        $adminEmail = 'lucmariolokossou@gmail.com';
         if (!User::where('email', $adminEmail)->exists()) {
             User::create([
-                'firstname' => 'Luc Mario',
+                'firstname' => 'Luçmario',
                 'lastname' => 'Lokossou',
-                'name' => 'Luc Mario Lokossou',
+                'name' => 'Luçmario Lokossou',
                 'email' => $adminEmail,
-                'password' => bcrypt('Medic@Hub2025'),
+                'password' => bcrypt('motdepasseadmin'), // Mot de passe admin modifié
                 'role_id' => $adminRole->id,
             ]);
         } else {
-            // Si l'utilisateur existe déjà, on force son rôle à admin et on met à jour le mot de passe
             $admin = User::where('email', $adminEmail)->first();
+            $admin->firstname = 'Luçmario';
+            $admin->lastname = 'Lokossou';
+            $admin->name = 'Luçmario Lokossou';
             $admin->role_id = $adminRole->id;
-            $admin->password = bcrypt('Medic@Hub2025');
+            $admin->password = bcrypt('motdepasseadmin');
             $admin->save();
         }
+
+        // Création de l'utilisateur patient supplémentaire
+        $otherPatientEmail = 'mediconnect.bj@gmail.com';
+        if (!User::where('email', $otherPatientEmail)->exists()) {
+            User::create([
+                'firstname' => 'MediConnect',
+                'lastname' => 'BJ',
+                'name' => 'MediConnect BJ',
+                'email' => $otherPatientEmail,
+                'password' => bcrypt('motdepasse'),
+                'role_id' => $patientRole->id,
+            ]);
+        
+            $otherPatient = User::where('email', $otherPatientEmail)->first();
+            $otherPatient->role_id = $patientRole->id;
+            $otherPatient->password = bcrypt('motdepasse');
+            $otherPatient->save();
+        }
+
+        // Synchronisation des users doctor -> doctors
+        $this->call(\Database\Seeders\FixUserDoctorSeeder::class);
+        // Synchronisation des users patient -> patients
+        $this->call(\Database\Seeders\FixUserPatientSeeder::class);
     }
 }

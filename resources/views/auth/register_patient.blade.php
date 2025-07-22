@@ -54,7 +54,12 @@
       </div>
       <div class="mb-3">
         <label class="form-label">Mot de passe</label>
-        <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
+        <div class="input-group">
+          <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" id="password" required>
+          <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('password')">
+            <i class="bi bi-eye" id="toggleIcon"></i>
+          </button>
+        </div>
         @error('password')
           <div class="invalid-feedback">{{ $message }}</div>
         @enderror
@@ -70,4 +75,21 @@
     </div>
   </div>
 </div>
+@endsection
+@section('scripts')
+<script>
+function togglePassword(id) {
+    var input = document.getElementById(id);
+    var icon = document.getElementById('toggleIcon');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = "password";
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+</script>
 @endsection

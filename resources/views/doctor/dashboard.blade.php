@@ -58,7 +58,12 @@
             <ul class="list-group mb-3">
                 @foreach($upcomingAppointments as $rdv)
                     <li class="list-group-item">
-                        {{ $rdv->patient->user->firstname }} {{ $rdv->patient->user->lastname }} le {{ \Carbon\Carbon::parse($rdv->date)->format('d/m/Y') }} à {{ $rdv->heure }}
+                        {{ $rdv->patient->user->firstname }} {{ $rdv->patient->user->lastname }} le {{ \Carbon\Carbon::parse($rdv->appointment_date)->format('d/m/Y H:i') }}
+                        @if($rdv->status === 'confirmed')
+                            <a href="{{ route('teleconsultation.appointment', ['appointment' => $rdv->id]) }}" class="btn btn-success btn-sm ms-2">
+                                <i class="bi bi-camera-video"></i> Démarrer la téléconsultation
+                            </a>
+                        @endif
                     </li>
                 @endforeach
             </ul>

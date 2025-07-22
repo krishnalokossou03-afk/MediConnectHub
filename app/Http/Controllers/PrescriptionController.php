@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Prescription;
 use App\Models\Consultation;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Mail;
 
 class PrescriptionController extends Controller
 {
@@ -28,9 +30,22 @@ class PrescriptionController extends Controller
             'instructions' => 'nullable|string',
         ]);
 
-        Prescription::create($request->all());
+        $prescription = Prescription::create($request->all());
 
-        return redirect()->route('prescriptions.index')->with('success', 'Ordonnance enregistrée.');
+        // Envoi de l'ordonnance PDF par email au patient
+        $consultation = $prescription->consultation()->with('patient.user')->first();
+        $user = $consultation && $consultation->patient ? $consultation->patient->user : null;
+        if ($user && $user->email) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('prescriptions.pdf', ['prescription' => $prescription]);
+            Mail::send([], [], function ($message) use ($user, $pdf, $prescription) {
+                $message->to($user->email)
+                    ->subject('Votre ordonnance MediConnectHub')
+                    ->setBody('Bonjour,\n\nVeuillez trouver en pièce jointe votre ordonnance.\n\nMerci pour votre confiance.\nMediConnectHub', 'text/plain')
+                    ->attachData($pdf->output(), 'ordonnance-'.$prescription->id.'.pdf');
+            });
+        }
+
+        return redirect()->route('prescriptions.index')->with('success', 'Ordonnance enregistrée et envoyée au patient.');
     }
 
     public function show(Prescription $prescription)
@@ -59,5 +74,12 @@ class PrescriptionController extends Controller
     {
         $prescription->delete();
         return redirect()->route('prescriptions.index')->with('success', 'Ordonnance supprimée.');
+    }
+
+    public function downloadPdf($id)
+    {
+        $prescription = \App\Models\Prescription::with('consultation.doctor.user', 'consultation.patient.user')->findOrFail($id);
+        $pdf = Pdf::loadView('prescriptions.pdf', compact('prescription'));
+        return $pdf->download('ordonnance-'.$prescription->id.'.pdf');
     }
 }

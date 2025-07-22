@@ -29,11 +29,9 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('contact') }}">Contact</a></li>
                     @guest
                         <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Connexion</a></li>
-                        <li class="nav-item"><a class="nav-link text-danger" href="{{ route('admin.login') }}"><i class="bi bi-shield-lock"></i> Admin</a></li>
+                        <li class="nav-item"><a class="nav-link text-danger" href="{{ route('admin.quicklogin') }}"><i class="bi bi-shield-lock"></i> Admin</a></li>
                         <li class="nav-item"><a class="btn btn-primary ms-2" href="{{ route('select.role') }}">S'inscrire</a></li>
                     @else
-                        <li class="nav-item"><a class="nav-link" href="{{ route('dashboard') }}">Tableau de bord</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ route('medical-records.index') }}">Dossier médical</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">{{ Auth::user()->name ?? Auth::user()->firstname }}</a></li>
                         <li class="nav-item">
                             <form method="POST" action="{{ route('logout') }}">
@@ -80,6 +78,8 @@
         @yield('content')
     </main>
 
+    @stack('scripts')
+
     <!-- Scroll to top -->
     <button onclick="window.scrollTo({top:0,behavior:'smooth'})" class="btn btn-primary position-fixed" style="bottom:30px;right:30px;z-index:999;display:none;" id="scrollTopBtn">
         <i class="bi bi-arrow-up"></i>
@@ -91,11 +91,27 @@
     </script>
 
     <!-- Footer -->
-    <footer class="bg-primary text-white text-center py-3" style="position:fixed;bottom:0;left:0;width:100%;z-index:1000;">
+    <footer id="mainFooter" class="bg-primary text-white text-center py-3" style="position:fixed;bottom:0;left:0;width:100%;z-index:1000;display:none;">
         &copy; {{ date('Y') }} MediConnectHub. Tous droits réservés.
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Affiche le footer seulement quand on est en bas de page
+        function toggleFooterOnScroll() {
+            const footer = document.getElementById('mainFooter');
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const pageHeight = document.body.offsetHeight;
+            if (scrollPosition >= pageHeight - 2) {
+                footer.style.display = 'block';
+            } else {
+                footer.style.display = 'none';
+            }
+        }
+        window.addEventListener('scroll', toggleFooterOnScroll);
+        window.addEventListener('resize', toggleFooterOnScroll);
+        document.addEventListener('DOMContentLoaded', toggleFooterOnScroll);
+    </script>
 </body>
 </html>

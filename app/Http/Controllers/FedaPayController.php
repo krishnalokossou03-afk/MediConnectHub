@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
+use App\Models\Bill;
+use App\Models\Payment;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Mail;
 
 class FedaPayController extends Controller
 {
@@ -49,5 +53,65 @@ class FedaPayController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Erreur FedaPay : ' . $e->getMessage());
         }
+    }
+
+    public function callback(Request $request)
+    {
+        // Récupérer les données envoyées par FedaPay
+        $payload = $request->all();
+        // Exemple : $payload['transaction']['status'], $payload['transaction']['amount'], etc.
+        $status = $payload['transaction']['status'] ?? null;
+        $amount = $payload['transaction']['amount'] ?? null;
+        $billId = $payload['transaction']['custom_data']['bill_id'] ?? null;
+        $method = 'fedapay';
+        $paymentDate = now();
+
+        if ($status === 'approved' && $billId) {
+            $bill = Bill::find($billId);
+            if ($bill) {
+                $bill->is_paid = true;
+                $bill->save();
+                // Enregistrer le paiement
+                Payment::create([
+                    'bill_id' => $bill->id,
+                    'amount' => $amount,
+                    'method' => $method,
+                    'payment_date' => $paymentDate,
+                ]);
+                // Envoi du reçu PDF par email
+                $user = $bill->patient->user ?? null;
+                if ($user && $user->email) {
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('bills.receipt_pdf', compact('bill'));
+                    Mail::send([], [], function ($message) use ($user, $pdf, $bill) {
+                        $message->to($user->email)
+                            ->subject('Votre reçu de paiement MediConnectHub')
+                            ->setBody('Bonjour,\n\nVeuillez trouver en pièce jointe votre reçu de paiement.\n\nMerci pour votre confiance.\nMediConnectHub', 'text/plain')
+                            ->attachData($pdf->output(), 'recu-facture-'.$bill->id.'.pdf');
+                    });
+                }
+                return response()->json(['status' => 'success', 'message' => 'Paiement validé, facture mise à jour et reçu envoyé.']);
+            }
+        }
+        return response()->json(['status' => 'error', 'message' => 'Paiement non validé ou facture introuvable.']);
+    }
+
+    public function return(Request $request)
+    {
+        $user = auth()->user();
+        $bill = null;
+        if ($user && $user->patient) {
+            $bill = \App\Models\Bill::where('patient_id', $user->patient->id)
+                ->where('is_paid', true)
+                ->latest('updated_at')
+                ->first();
+        }
+        return view('fedapay.return', compact('bill'));
+    }
+
+    public function downloadReceipt($billId)
+    {
+        $bill = \App\Models\Bill::findOrFail($billId);
+        $pdf = Pdf::loadView('bills.receipt_pdf', compact('bill'));
+        return $pdf->download('recu-facture-'.$bill->id.'.pdf');
     }
 }

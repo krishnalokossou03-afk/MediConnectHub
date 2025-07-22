@@ -10,7 +10,7 @@ class Consultation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'patient_id', 'doctor_id', 'date_consultation', 'diagnostic', 'observation'
+        'appointment_id', 'doctor_id', 'notes'
     ];
 
     public function patient()
@@ -31,5 +31,10 @@ class Consultation extends Model
     public function bill()
     {
         return $this->hasOne(Bill::class);
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(\App\Models\Appointment::class);
     }
 }
